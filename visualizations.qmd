@@ -166,10 +166,10 @@ lines = base.mark_line(point=True, strokeWidth=3).encode(
 )
 
 # --- CAPA 3: LÍNEA FIJA DE REFERENCIA (14.7 MW) ---
-reference_line = alt.Chart(pd.DataFrame({'y': [15.7]})).mark_rule(
+reference_line = alt.Chart(pd.DataFrame({'y': [16]})).mark_rule(
     color='red', 
-    strokeDash=[5, 5], 
-    strokeWidth=2
+    strokeDash=[10, 5], 
+    strokeWidth=1
 ).encode(
     y='y:Q'
 )
@@ -179,7 +179,7 @@ reference_label = reference_line.mark_text(
     align='left', 
     dx=5, 
     dy=-10, 
-    text='Ref: 14.7 MW', 
+    text='Ref: 16 MW', 
     color='red'
 ).encode(
     x=alt.value(0) # Alineado al inicio del gráfico
