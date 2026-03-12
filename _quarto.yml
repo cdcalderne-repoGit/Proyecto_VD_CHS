@@ -1,0 +1,20 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Índices de producción de la CHS"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Inicio
+      - href: data_cleaning.qmd
+        text: Limpieza de Datos
+      - href: visualizations.qmd
+        text: Visualizaciones
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true

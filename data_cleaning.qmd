@@ -1,0 +1,142 @@
+---
+title: "Limpieza y Preparación de Datos"
+execute:
+  echo: true
+  warning: false
+---
+
+# Proceso de Ingeniería de Datos
+En esta sección se documenta la transformación del dataset original a un formato apto para el análisis estadístico.
+
+## Proceso ETL
+
+Para que las visualizaciones técnicas sean precisas, los datos deben seguir la estructura de **Tidy Data**: cada variable debe ser una columna y cada observación una fila [1]. El dataset original `chs_energia.csv` presenta un formato "ancho" con una columna por cada hora del día, lo cual dificulta el análisis estadístico.
+
+### 1. Carga del Dataset
+
+Cargamos los datos utilizando Pandas, gestionando los separadores de miles (punto) y decimales (coma) detectados en el archivo original [3].
+
+
+```{python}
+# Importe de librerias
+import pandas as pd
+import numpy as np
+import unicodedata
+import altair as alt
+
+# Función para limpieza de datos
+def limpiar_texto(texto):
+    if pd.isna(texto) or not isinstance(texto, str):
+        return texto
+    # Normalizar (separa la letra del acento) y eliminar acentos
+    texto = unicodedata.normalize('NFD', texto)
+    texto = "".join([c for c in texto if unicodedata.category(c) != 'Mn'])
+    # Mayúsculas y eliminar espacios extra
+    return texto.upper().strip()
+
+```
+
+
+```{python}
+# Importar la data
+ruta_archivo = "C:/Users/danie/OneDrive\Documentos/17. MasterDC/3. Titulacion/1. Proyecto/Datos_CHTP_15012026/CHS_ENERGIA.xlsx"
+df_raw = pd.read_excel(ruta_archivo, decimal=",", thousands=".")
+```
+
+### 2. Transformación a Formato Tidy Data
+Utilizamos la función melt para consolidar las 24 columnas de horas en una sola variable categórica llamada Hora y una variable cuantitativa llamada `Generacion_MW`. Originalmente el dataset contiene el caracter `-` ante ausencia de generación; este es reemplazado por el valor numérico `0`.
+```{python}
+# Aseguramos que 'Hora 1' sea numérica (evita errores de tipo 'object')
+df_raw['Hora 1'] = pd.to_numeric(df_raw['Hora 1'], errors='coerce')
+
+# Limpiar etiquetas de COLUMNAS
+df_raw.columns = [limpiar_texto(col) for col in df_raw.columns]
+
+# Actualizo el nombre de la columna año
+df_raw = df_raw.rename(columns={'ANO': 'ANIO', 'DIA':'FECHA' })
+
+# Limpiar contenido de la columna UNIDAD
+# Nota: Ahora la columna se llama 'UNIDAD' en mayúsculas por el paso anterior
+df_raw['UNIDAD'] = df_raw['UNIDAD'].apply(limpiar_texto)
+
+# Consolidación (Melt) con los nombres ya limpios
+id_vars = ['UNIDAD', 'ANIO', 'FECHA'] # Usamos los nombres ya normalizados
+hora_cols = [f'HORA {i}' for i in range(1, 25)]
+
+df_consolidado = df_raw.melt(
+    id_vars=id_vars,
+    value_vars=hora_cols,
+    var_name='HORA',
+    value_name='GENERACION_MW'
+)
+
+# Limpieza final de la variable HORA para que sea solo el número
+df_consolidado['HORA'] = (
+    df_consolidado['HORA']
+    .str.extract(r'(\d+)')  # r indica raw string, más seguro para regex
+    .fillna(0)              # Si no encuentra número, pone 0
+    .astype(int)
+)
+
+# Limpieza de valores: los guiones '-' se interpretan como ausencia de generación (0)
+df_consolidado['GENERACION_MW'] = (
+    df_consolidado['GENERACION_MW']
+    .replace('-', '0')
+    .pipe(pd.to_numeric, errors='coerce') # Convierte a float y deja NaN si hay error
+    .fillna(0)                            # Convierte los NaN en 0
+)
+
+# Aseguramos que DIA sea tipo datetime
+df_consolidado['FECHA'] = pd.to_datetime(df_consolidado['FECHA'])
+# Creamos la columna FECHA_HORA
+# Sumamos a la fecha original una cantidad de horas proporcional al valor de 'HORA'
+df_consolidado['FECHA_HORA'] = df_consolidado['FECHA'] + pd.to_timedelta(df_consolidado['HORA'], unit='h')
+
+# Elimino errores por asignación de la hora 24 (solapamiento por hora 0 del día siguiente)
+df_consolidado['FECHA_HORA'] = np.where(
+    df_consolidado['HORA'] == 24,
+    df_consolidado['FECHA_HORA'] - pd.Timedelta(seconds=1),
+    df_consolidado['FECHA_HORA']
+)
+
+# identifico valores duplicados
+duplicados = df_consolidado[df_consolidado.duplicated(subset=['UNIDAD', 'FECHA_HORA'], keep=False)]
+print(f"Se encontraron {len(duplicados)} filas en conflicto.")
+
+# Definimos el orden deseado de las columnas
+columnas_ordenadas = ['FECHA_HORA', 'FECHA', 'ANIO', 'HORA', 'UNIDAD', 'GENERACION_MW']
+
+# Reorganizamos el DataFrame
+df_consolidado = df_consolidado[columnas_ordenadas]
+
+```
+
+A continuación se muestra que no existen valores nulos:
+```{python}
+df_consolidado.info()
+```
+Y, finalmente un resumen de los valores iniciales del dataset.
+```{python}
+df_consolidado.head(10)
+```
+
+## Justificación de decisiones
+1. **Uso de Melt:** Altair requiere que los datos estén en formato largo para poder mapear canales visuales (como el color o el eje X) a columnas específicas del dataframe.\
+2. **Manejo de Nulos:** Se sustituyeron los guiones y valores nulos por 0 para garantizar que los gráficos de áreas y heatmaps no presenten "huecos" que distorsionen la interpretación técnica de la disponibilidad.\
+3. **Tipado Explícito:** Al definir la generación como cuantitativa (Q) y la fecha como temporal (T), permitimos que las herramientas de visualización realicen agregaciones automáticas como promedios o sumas por mes\
+
+## Exportar datos listos para visualización
+```{python}
+# Definir el nombre del archivo
+nombre_archivo = "Energia_CMS_final.csv"
+
+# Exportar a CSV
+df_consolidado.to_csv(
+    nombre_archivo, 
+    index=False,        # No guardar la columna de índices de Pandas
+    encoding='utf-8-sig', # 'utf-8-sig' ayuda a que Excel reconozca caracteres especiales y tildes
+    sep=';'             # Usamos punto y coma, que es el estándar regional en Ecuador para CSVs
+)
+
+print(f"Archivo exportado con éxito: {nombre_archivo}")
+```

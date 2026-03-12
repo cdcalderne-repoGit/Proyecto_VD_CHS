@@ -1,0 +1,29 @@
+---
+title: "Índices de producción de la CHS"
+author: "Christian Calderón E."
+---
+
+## Introducción
+Bienvenido al portal de análisis técnico de la Central Hidroeléctrica Sarapullo. Este proyecto evalúa el despacho energético de las unidades de generación.
+
+## Contexto del Proyecto
+
+La Central Hidroeléctrica Sarapullo es un componente crítico del sector energético. Este análisis se enfoca en el despacho de sus tres unidades de generación. La motivación principal surge de la necesidad de proporcionar herramientas para la gestión de la **variabilidad hídrica en Ecuador**, asegurando que el Sistema Nacional Interconectado (SNI) mantenga su disponibilidad operativa frente a cambios climáticos estacionales.
+
+## Preguntas de Dominio
+
+El análisis busca dar respuesta a las siguientes interrogantes técnicas:\
+    **1. Distribución de carga:** ¿Cómo se reparte el esfuerzo de generación entre las tres unidades?\
+    **2. Estacionalidad:** ¿En qué periodos del año se registran los aportes máximos y mínimos?\
+    **3. Disponibilidad:** ¿Es posible detectar visualmente periodos de indisponibilidad o generación cero?\
+
+## Descripción del Dataset
+
+Para este estudio se utiliza el conjunto de datos `chs_energia.csv`, el cual contiene registros de generación horaria (MW/h). El dataset presenta una estructura de tabla temporal con mediciones para cada una de las 24 horas del día, desglosadas por unidad de generación.
+
+## Navegación del Proyecto
+
+Puedes explorar el proceso completo a través de los siguientes enlaces:
+
+*   [**Limpieza de Datos**](data_cleaning.qmd): Documentación del proceso de transformación a formato *Tidy Data*.
+*   [**Visualizaciones Interactivas**](visualizations.qmd): Análisis gráfico del desempeño y detección de tendencias.
