@@ -199,7 +199,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="carga-del-dataset" class="level3">
 <h3 class="anchored" data-anchor-id="carga-del-dataset">1. Carga del Dataset</h3>
 <p>Cargamos los datos utilizando Pandas, gestionando los separadores de miles (punto) y decimales (coma) detectados en el archivo original [3].</p>
-<div id="8ebda77b" class="cell" data-execution_count="1">
+<div id="f7ed1dcd" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Importe de librerias</span></span>
@@ -219,7 +219,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> texto.upper().strip()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="7c41d7ee" class="cell" data-execution_count="2">
+<div id="2dca697e" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Importar la data</span></span>
@@ -231,7 +231,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="transformación-a-formato-tidy-data" class="level3">
 <h3 class="anchored" data-anchor-id="transformación-a-formato-tidy-data">2. Transformación a Formato Tidy Data</h3>
 <p>Utilizamos la función melt para consolidar las 24 columnas de horas en una sola variable categórica llamada Hora y una variable cuantitativa llamada <code>Generacion_MW</code>. Originalmente el dataset contiene el caracter <code>-</code> ante ausencia de generación; este es reemplazado por el valor numérico <code>0</code>.</p>
-<div id="9e1f2645" class="cell" data-execution_count="3">
+<div id="7030920b" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Aseguramos que 'Hora 1' sea numérica (evita errores de tipo 'object')</span></span>
@@ -302,7 +302,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>A continuación se muestra que no existen valores nulos:</p>
-<div id="52f622a2" class="cell" data-execution_count="4">
+<div id="fde06571" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>df_consolidado.info()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -324,7 +324,7 @@ memory usage: 5.9 MB</code></pre>
 </div>
 </div>
 <p>Y, finalmente un resumen de los valores iniciales del dataset.</p>
-<div id="280a48a0" class="cell" data-execution_count="5">
+<div id="0f2b562e" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>df_consolidado.head(<span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -457,7 +457,7 @@ memory usage: 5.9 MB</code></pre>
 </section>
 <section id="exportar-datos-listos-para-visualización" class="level2">
 <h2 class="anchored" data-anchor-id="exportar-datos-listos-para-visualización">Exportar datos listos para visualización</h2>
-<div id="8b46d6af" class="cell" data-execution_count="6">
+<div id="d3016968" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Definir el nombre del archivo</span></span>
