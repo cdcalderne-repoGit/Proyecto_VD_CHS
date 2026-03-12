@@ -17,5 +17,4 @@ _site/
 .quarto/
 /.quarto/
 *_files/
-docs/
 **/*.quarto_ipynb
