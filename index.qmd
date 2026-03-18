@@ -1,29 +1,44 @@
 ---
-title: "Análisis Técnico - Energético de la Central Hidroeléctrica Sarapullo"
+title: "Análisis Técnico - Energético de la Central Hidroeléctrica"
+subtitle: "Definición y contextualización del análisis gráfico"
 author: "Christian Calderón E."
 ---
 
 ## Introducción
-Bienvenido al portal de análisis técnico - energético de la Central Hidroeléctrica Sarapullo. Este proyecto evalúa el despacho energético de las unidades de generación desde el inicio de las pruebas técnicas hasta febrero de 2026. El objetivo es proporcionar una visión clara y detallada del comportamiento de la generación, identificando patrones estacionales y posibles áreas de mejora en la gestión de recursos hídricos.
+Bienvenido al portal de análisis técnico - energético de la Central Hidroeléctrica. Este proyecto evalúa el despacho energético de las unidades de generación desde el inicio de las pruebas técnicas hasta febrero de 2026. El objetivo es proporcionar una visión clara y detallada del comportamiento de la generación, identificando patrones estacionales y posibles áreas de mejora en la gestión de recursos hídricos.
+
+Los parámetros y especificaciones técnicas principales de la centra hidroeléctrica se detallan a continuación:
+
+- **Unidades de generación:** 3 de 16.3 MW cada una
+- **Potencia Instalada:** 48.9 MW
+- **Energía media anual (diseño)** 1100GWh/año
 
 ## Contexto del análisis gráfico
 
-La Central Hidroeléctrica Sarapullo es un componente crítico del sector energético ecuatoriano y en el componente clave en el funcionamiento del Complejo Hidroeléctrico Toachi-Pilatón. Desde su inicio de pruebas técnicas en abril del 2022 la energía producida por la CHS a evolucionado como producto del proceso de estabilización de la planta, mejora en las estrategias de mantenimiento, adaptación de nuevas medidas operativas y en si, el aumento en la familiarización del personal técnico con la planta. Por otro lado, está presente en componente estacional asociado a la naturaleza del clima, que puede llegar a predecirse con un grado de certeza aceptable con las herramientas de análisis de datos y machine learning en constante evolución. Estos factores y condiciones requieren de herramientas visuales que faciliten la interpretación de los datos, identificación de patrones y contribuyan con información técnica basada en datos para la toma de desiciones acertadas por parte del personal técnico y gerencial. En este contexto, este análisis gráfico busca contribuir a esta causa, enfocándose el despacho energético de las tres unidades de generación. La motivación principal surge de la necesidad de proporcionar herramientas para la gestión de la **variabilidad hídrica en Ecuador** y la **evolución positiva de los índices de producción de la central**, asegurando el apórte energético al Sistema Nacional Interconectado (SNI) frente a cambios climáticos estacionales.
+La Central Hidroeléctrica es un componente crítico del sector energético ecuatoriano y un componente clave en el funcionamiento del Complejo Hidroeléctrico en cascada al que pertence. Desde su inicio de pruebas técnicas en abril del 2022 la energía producida por la central a evolucionado como producto del proceso de estabilización de la planta, mejora en las estrategias de mantenimiento, adaptación de nuevas medidas operativas, y en si, el aumento en la familiarización del personal técnico con la planta.\
+
+Por otro lado, está presente en componente estacional asociado a la naturaleza del clima, que puede llegar a predecirse con un grado de certeza aceptable con las herramientas de análisis de datos y machine learning en constante evolución.\above
+
+Estos factores y condiciones requieren de herramientas visuales que faciliten la interpretación de los datos, identificación de patrones y contribuyan con información técnica basada en datos para la toma de desiciones acertadas por parte del personal técnico y gerencial.\
+
+En este contexto, este análisis gráfico busca contribuir a esta causa, enfocándose el despacho energético de las tres unidades de generación. La motivación principal surge de la necesidad de proporcionar herramientas para la gestión de la **variabilidad hídrica en Ecuador** y la **evolución positiva de los índices de producción de la central**, asegurando el apórte energético al Sistema Nacional Interconectado (SNI) frente a cambios climáticos estacionales.
 
 ## Preguntas que se busca responder
 
 El análisis busca dar respuesta a las siguientes interrogantes técnicas:\
-    **1. Distribución de carga:** ¿Cómo se reparte las horas de funcionamiento (sincronismo) entre las tres unidades a lo largo del tiempo?\
-    **2. Estacionalidad:** ¿En qué periodos del año se registran los aportes máximos y mínimos?\
+    **1. Distribución de carga:** ¿Cómo se distribuye la carga total de la central entre las tres unidades a lo largo del tiempo?\
+    **2. Estacionalidad:** ¿En qué periodos del año se registran los aportes energéticos máximos y mínimos?\
     **3. Disponibilidad:** ¿Es posible detectar visualmente periodos de indisponibilidad o generación cero?\
 
 ## Descripción del Dataset
 
-Para este estudio se utiliza el conjunto de datos `chs_energia.csv`, el cual contiene registros de generación horaria (MW/h). El dataset presenta una estructura de tabla temporal con mediciones para cada una de las 24 horas del día, desglosadas por unidad de generación. Los datos son adquiridos del sistema de medición comercial de la CHS, lo que garantiza su precisión y relevancia para el análisis técnico. La información se ha procesado para asegurar su calidad, eliminando valores atípicos y completando registros faltantes, lo que permite un análisis confiable y detallado del desempeño energético de la central.
+Para este estudio se utiliza el conjunto de datos `chs_energia.csv`, el cual contiene registros de generación horaria (kW/h). El dataset presenta una estructura de tabla temporal con mediciones para cada una de las 24 horas del día, diferenciadas por unidad de generación. Los datos son adquiridos del sistema de medición comercial de la central hidroeléctrica, lo que garantiza su precisión y relevancia para el análisis técnico.\
+
+La información se ha procesado para asegurar su calidad, verificando la ausencia de datos y completando registros faltantes, lo que permite un análisis confiable y detallado del desempeño energético de la central.
 
 ## Navegación del Proyecto
 
-Puedes explorar el proceso completo a través de los siguientes enlaces:
+Puedes explorar el proceso completo de análisis a través de los siguientes enlaces:
 
 *   [**Limpieza de Datos**](data_cleaning.qmd): Documentación del proceso de transformación a formato *Tidy Data*.
 *   [**Visualizaciones Interactivas**](visualizations.qmd): Análisis gráfico del desempeño y detección de tendencias.

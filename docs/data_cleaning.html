@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Análisis Técnico - Energético de la Central Hidroeléctrica Sarapullo – Índices de producción de la CHS</title>
+<title>Análisis Técnico - Energético de la Central Hidroeléctrica – Índices de producción de la CHS</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -133,11 +133,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>  
   <li class="nav-item">
     <a class="nav-link active" href="./data_cleaning.html" aria-current="page"> 
-<span class="menu-text">Limpieza de Datos</span></a>
+<span class="menu-text">Procesamiento de tratamiento de Datos</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./visualizations.html"> 
-<span class="menu-text">Visualizaciones</span></a>
+<span class="menu-text">Analisis gráfico de patrones y tendencias</span></a>
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
@@ -155,7 +155,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#proceso-de-ingeniería-de-datos" id="toc-proceso-de-ingeniería-de-datos" class="nav-link active" data-scroll-target="#proceso-de-ingeniería-de-datos">Proceso de Ingeniería de Datos</a>
+  <li><a href="#procesamiento-de-tratamiento-de-datos" id="toc-procesamiento-de-tratamiento-de-datos" class="nav-link active" data-scroll-target="#procesamiento-de-tratamiento-de-datos">Procesamiento de tratamiento de Datos</a>
   <ul class="collapse">
   <li><a href="#proceso-etl" id="toc-proceso-etl" class="nav-link" data-scroll-target="#proceso-etl">Proceso ETL</a>
   <ul class="collapse">
@@ -173,7 +173,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Análisis Técnico - Energético de la Central Hidroeléctrica Sarapullo</h1>
+<h1 class="title">Análisis Técnico - Energético de la Central Hidroeléctrica</h1>
 <p class="subtitle lead">Limpieza y Preparación de Datos</p>
 </div>
 
@@ -191,16 +191,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="proceso-de-ingeniería-de-datos" class="level1">
-<h1>Proceso de Ingeniería de Datos</h1>
-<p>En esta sección se documenta el proceso de adquisición de datos hasta la transformación del dataset original a un formato apto para el análisis estadístico y elaboración de visualizaciones técnicas. El objetivo es garantizar que los datos estén limpios, estructurados y listos para responder a las preguntas de dominio planteadas en el análisis gráfico.</p>
+<section id="procesamiento-de-tratamiento-de-datos" class="level1">
+<h1>Procesamiento de tratamiento de Datos</h1>
+<p>En esta sección se documenta el proceso de adquisición de datos hasta la transformación del dataset original a un formato apto para el análisis estadístico y elaboración de visualizaciones técnicas.<br>
+</p>
+<p>El objetivo es garantizar que los datos estén limpios, estructurados y listos para responder a las preguntas planteadas mediante análisis visual.</p>
 <section id="proceso-etl" class="level2">
 <h2 class="anchored" data-anchor-id="proceso-etl">Proceso ETL</h2>
-<p>Para que las visualizaciones técnicas sean precisas, los datos deben seguir la estructura de <strong>formato fila</strong>: cada variable debe ser una columna y cada observación una fila. El dataset original <code>chs_energia.csv</code> presenta un formato “ancho” con una columna por cada hora del día, lo cual dificultaría el análisis estadístico.</p>
+<p>Los datos están almacenados en un archivo .csv por lo cual su ingesta se limita a leerlo y transformador a un <code>DataFrame</code> de <code>pandas</code>.<br>
+</p>
+<p>El dataset original presenta un formato “ancho” con una columna por cada hora del día, lo cual dificultaría el análisis estadístico. Se aplica una transformación a formato “largo” para facilitar su análisis. Para esto se utiliza la función <code>melt</code> de pandas, que consolida las 24 columnas de horas en una sola variable categórica llamada <code>Hora</code> y una variable cuantitativa llamada <code>Generacion_MW</code>.<br>
+</p>
+<p>El dataset original contiene el caracter <code>-</code> ante ausencia de generación; este es reemplazado por el valor numérico <code>0</code> para asegurar que las visualizaciones reflejen correctamente los periodos de generación nula.</p>
 <section id="carga-del-dataset" class="level3">
 <h3 class="anchored" data-anchor-id="carga-del-dataset">1. Carga del Dataset</h3>
 <p>Cargamos los datos utilizando Pandas, gestionando los separadores de miles (punto) y decimales (coma) detectados en el archivo original.</p>
-<div id="e3768d35" class="cell" data-execution_count="1">
+<div id="564a5faa" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Importe de librerias</span></span>
@@ -210,7 +216,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> altair <span class="im">as</span> alt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="61c01b35" class="cell" data-execution_count="2">
+<div id="0c30d800" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Función para limpieza de datos</span></span>
@@ -224,7 +230,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> texto.upper().strip()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="fcc12f4b" class="cell" data-execution_count="3">
+<div id="919c930c" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Importar la data</span></span>
@@ -237,7 +243,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="transformación-a-formato-ancho-limpieza-de-datos-e-impugación-de-valores">2. Transformación a Formato ancho, limpieza de datos e impugación de valores</h3>
 <p>Utilizamos la función melt para consolidar las 24 columnas de horas en una sola variable categórica llamada Hora y una variable cuantitativa llamada <code>Generacion_MW</code>. Originalmente el dataset contiene el caracter <code>-</code> ante ausencia de generación; este es reemplazado por el valor numérico <code>0</code>.</p>
 <p>Se identifica si existen filas con fechas duplicadas:</p>
-<div id="847b5bb7" class="cell" data-execution_count="4">
+<div id="b48a2eeb" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Aseguramos que 'Hora 1' sea numérica (evita errores de tipo 'object')</span></span>
@@ -308,7 +314,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>A continuación se muestra que no existen valores nulos, el número total de observaciones [102744], las variables utilizdas y su tipo:</p>
-<div id="61dcdee1" class="cell" data-execution_count="5">
+<div id="713b7999" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>df_consolidado.info()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -330,7 +336,7 @@ memory usage: 5.9 MB</code></pre>
 </div>
 </div>
 <p>Y, finalmente un resumen de los valores en un rango determinado del dataset.</p>
-<div id="8709d059" class="cell" data-execution_count="6">
+<div id="f792cebc" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>df_consolidado.query(<span class="st">"FECHA &gt;= '2025-01-01' and FECHA &lt;= '2025-01-01' and UNIDAD == 'SARAPULLO U1'"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -589,7 +595,7 @@ memory usage: 5.9 MB</code></pre>
 </section>
 <section id="exportar-datos-listos-para-visualización" class="level2">
 <h2 class="anchored" data-anchor-id="exportar-datos-listos-para-visualización">Exportar datos listos para visualización</h2>
-<div id="d12c21d7" class="cell" data-execution_count="7">
+<div id="ad266d54" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Definir el nombre del archivo</span></span>

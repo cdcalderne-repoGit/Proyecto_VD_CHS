@@ -1,17 +1,24 @@
 ---
-title: "Análisis Técnico - Energético de la Central Hidroeléctrica Sarapullo"
+title: "Análisis Técnico - Energético de la Central Hidroeléctrica"
 subtitle: "Limpieza y Preparación de Datos"
 execute:
   echo: true
   warning: false
 ---
 
-# Proceso de Ingeniería de Datos
-En esta sección se documenta el proceso de adquisición de datos hasta la transformación del dataset original a un formato apto para el análisis estadístico y elaboración de visualizaciones técnicas. El objetivo es garantizar que los datos estén limpios, estructurados y listos para responder a las preguntas de dominio planteadas en el análisis gráfico.
+# Procesamiento de tratamiento de Datos
+En esta sección se documenta el proceso de adquisición de datos hasta la transformación del dataset original a un formato apto para el análisis estadístico y elaboración de visualizaciones técnicas.\
+
+El objetivo es garantizar que los datos estén limpios, estructurados y listos para responder a las preguntas planteadas mediante análisis visual.
 
 ## Proceso ETL
 
-Para que las visualizaciones técnicas sean precisas, los datos deben seguir la estructura de **formato fila**: cada variable debe ser una columna y cada observación una fila. El dataset original `chs_energia.csv` presenta un formato "ancho" con una columna por cada hora del día, lo cual dificultaría el análisis estadístico.
+Los datos están almacenados en un archivo .csv por lo cual su ingesta se limita a leerlo y transformador a un `DataFrame` de `pandas`.\
+
+El dataset original presenta un formato "ancho" con una columna por cada hora del día, lo cual dificultaría el análisis estadístico.
+Se aplica una transformación a formato "largo" para facilitar su análisis. Para esto se utiliza la función `melt` de pandas, que consolida las 24 columnas de horas en una sola variable categórica llamada `Hora` y una variable cuantitativa llamada `Generacion_MW`.\
+
+El dataset original contiene el caracter `-` ante ausencia de generación; este es reemplazado por el valor numérico `0` para asegurar que las visualizaciones reflejen correctamente los periodos de generación nula.
 
 ### 1. Carga del Dataset
 
@@ -47,6 +54,7 @@ df_raw = pd.read_excel(ruta_archivo, decimal=",", thousands=".")
 ```
 
 ### 2. Transformación a Formato ancho, limpieza de datos e impugación de valores
+
 Utilizamos la función melt para consolidar las 24 columnas de horas en una sola variable categórica llamada Hora y una variable cuantitativa llamada `Generacion_MW`. Originalmente el dataset contiene el caracter `-` ante ausencia de generación; este es reemplazado por el valor numérico `0`.
 
 Se identifica si existen filas con fechas duplicadas:
