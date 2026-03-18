@@ -1,20 +1,21 @@
 ---
-title: "Limpieza y Preparación de Datos"
+title: "Análisis Técnico - Energético de la Central Hidroeléctrica Sarapullo"
+subtitle: "Limpieza y Preparación de Datos"
 execute:
   echo: true
   warning: false
 ---
 
 # Proceso de Ingeniería de Datos
-En esta sección se documenta la transformación del dataset original a un formato apto para el análisis estadístico.
+En esta sección se documenta el proceso de adquisición de datos hasta la transformación del dataset original a un formato apto para el análisis estadístico y elaboración de visualizaciones técnicas. El objetivo es garantizar que los datos estén limpios, estructurados y listos para responder a las preguntas de dominio planteadas en el análisis gráfico.
 
 ## Proceso ETL
 
-Para que las visualizaciones técnicas sean precisas, los datos deben seguir la estructura de **Tidy Data**: cada variable debe ser una columna y cada observación una fila [1]. El dataset original `chs_energia.csv` presenta un formato "ancho" con una columna por cada hora del día, lo cual dificulta el análisis estadístico.
+Para que las visualizaciones técnicas sean precisas, los datos deben seguir la estructura de **formato fila**: cada variable debe ser una columna y cada observación una fila. El dataset original `chs_energia.csv` presenta un formato "ancho" con una columna por cada hora del día, lo cual dificultaría el análisis estadístico.
 
 ### 1. Carga del Dataset
 
-Cargamos los datos utilizando Pandas, gestionando los separadores de miles (punto) y decimales (coma) detectados en el archivo original [3].
+Cargamos los datos utilizando Pandas, gestionando los separadores de miles (punto) y decimales (coma) detectados en el archivo original.
 
 
 ```{python}
@@ -23,7 +24,9 @@ import pandas as pd
 import numpy as np
 import unicodedata
 import altair as alt
+```
 
+```{python}
 # Función para limpieza de datos
 def limpiar_texto(texto):
     if pd.isna(texto) or not isinstance(texto, str):
@@ -43,8 +46,10 @@ ruta_archivo = "C:/Users/danie/OneDrive\Documentos/17. MasterDC/3. Titulacion/1.
 df_raw = pd.read_excel(ruta_archivo, decimal=",", thousands=".")
 ```
 
-### 2. Transformación a Formato Tidy Data
+### 2. Transformación a Formato ancho, limpieza de datos e impugación de valores
 Utilizamos la función melt para consolidar las 24 columnas de horas en una sola variable categórica llamada Hora y una variable cuantitativa llamada `Generacion_MW`. Originalmente el dataset contiene el caracter `-` ante ausencia de generación; este es reemplazado por el valor numérico `0`.
+
+Se identifica si existen filas con fechas duplicadas:
 ```{python}
 # Aseguramos que 'Hora 1' sea numérica (evita errores de tipo 'object')
 df_raw['Hora 1'] = pd.to_numeric(df_raw['Hora 1'], errors='coerce')
@@ -111,13 +116,13 @@ df_consolidado = df_consolidado[columnas_ordenadas]
 
 ```
 
-A continuación se muestra que no existen valores nulos:
+A continuación se muestra que no existen valores nulos, el número total de observaciones [102744], las variables utilizdas y su tipo:
 ```{python}
 df_consolidado.info()
 ```
-Y, finalmente un resumen de los valores iniciales del dataset.
+Y, finalmente un resumen de los valores en un rango determinado del dataset.
 ```{python}
-df_consolidado.head(10)
+df_consolidado.query("FECHA >= '2025-01-01' and FECHA <= '2025-01-01' and UNIDAD == 'SARAPULLO U1'")
 ```
 
 ## Justificación de decisiones

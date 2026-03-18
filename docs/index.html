@@ -8,7 +8,7 @@
 
 <meta name="author" content="Christian Calderón E.">
 
-<title>Índices de producción de la CHS</title>
+<title>Análisis Técnico - Energético de la Central Hidroeléctrica Sarapullo – Índices de producción de la CHS</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -119,8 +119,8 @@ ul.task-list li input[type="checkbox"] {
    
   <ul>
   <li><a href="#introducción" id="toc-introducción" class="nav-link active" data-scroll-target="#introducción">Introducción</a></li>
-  <li><a href="#contexto-del-proyecto" id="toc-contexto-del-proyecto" class="nav-link" data-scroll-target="#contexto-del-proyecto">Contexto del Proyecto</a></li>
-  <li><a href="#preguntas-de-dominio" id="toc-preguntas-de-dominio" class="nav-link" data-scroll-target="#preguntas-de-dominio">Preguntas de Dominio</a></li>
+  <li><a href="#contexto-del-análisis-gráfico" id="toc-contexto-del-análisis-gráfico" class="nav-link" data-scroll-target="#contexto-del-análisis-gráfico">Contexto del análisis gráfico</a></li>
+  <li><a href="#preguntas-que-se-busca-responder" id="toc-preguntas-que-se-busca-responder" class="nav-link" data-scroll-target="#preguntas-que-se-busca-responder">Preguntas que se busca responder</a></li>
   <li><a href="#descripción-del-dataset" id="toc-descripción-del-dataset" class="nav-link" data-scroll-target="#descripción-del-dataset">Descripción del Dataset</a></li>
   <li><a href="#navegación-del-proyecto" id="toc-navegación-del-proyecto" class="nav-link" data-scroll-target="#navegación-del-proyecto">Navegación del Proyecto</a></li>
   </ul>
@@ -131,7 +131,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Índices de producción de la CHS</h1>
+<h1 class="title">Análisis Técnico - Energético de la Central Hidroeléctrica Sarapullo</h1>
 </div>
 
 
@@ -156,23 +156,23 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="introducción" class="level2">
 <h2 class="anchored" data-anchor-id="introducción">Introducción</h2>
-<p>Bienvenido al portal de análisis técnico de la Central Hidroeléctrica Sarapullo. Este proyecto evalúa el despacho energético de las unidades de generación.</p>
+<p>Bienvenido al portal de análisis técnico - energético de la Central Hidroeléctrica Sarapullo. Este proyecto evalúa el despacho energético de las unidades de generación desde el inicio de las pruebas técnicas hasta febrero de 2026. El objetivo es proporcionar una visión clara y detallada del comportamiento de la generación, identificando patrones estacionales y posibles áreas de mejora en la gestión de recursos hídricos.</p>
 </section>
-<section id="contexto-del-proyecto" class="level2">
-<h2 class="anchored" data-anchor-id="contexto-del-proyecto">Contexto del Proyecto</h2>
-<p>La Central Hidroeléctrica Sarapullo es un componente crítico del sector energético. Este análisis se enfoca en el despacho de sus tres unidades de generación. La motivación principal surge de la necesidad de proporcionar herramientas para la gestión de la <strong>variabilidad hídrica en Ecuador</strong>, asegurando que el Sistema Nacional Interconectado (SNI) mantenga su disponibilidad operativa frente a cambios climáticos estacionales.</p>
+<section id="contexto-del-análisis-gráfico" class="level2">
+<h2 class="anchored" data-anchor-id="contexto-del-análisis-gráfico">Contexto del análisis gráfico</h2>
+<p>La Central Hidroeléctrica Sarapullo es un componente crítico del sector energético ecuatoriano y en el componente clave en el funcionamiento del Complejo Hidroeléctrico Toachi-Pilatón. Desde su inicio de pruebas técnicas en abril del 2022 la energía producida por la CHS a evolucionado como producto del proceso de estabilización de la planta, mejora en las estrategias de mantenimiento, adaptación de nuevas medidas operativas y en si, el aumento en la familiarización del personal técnico con la planta. Por otro lado, está presente en componente estacional asociado a la naturaleza del clima, que puede llegar a predecirse con un grado de certeza aceptable con las herramientas de análisis de datos y machine learning en constante evolución. Estos factores y condiciones requieren de herramientas visuales que faciliten la interpretación de los datos, identificación de patrones y contribuyan con información técnica basada en datos para la toma de desiciones acertadas por parte del personal técnico y gerencial. En este contexto, este análisis gráfico busca contribuir a esta causa, enfocándose el despacho energético de las tres unidades de generación. La motivación principal surge de la necesidad de proporcionar herramientas para la gestión de la <strong>variabilidad hídrica en Ecuador</strong> y la <strong>evolución positiva de los índices de producción de la central</strong>, asegurando el apórte energético al Sistema Nacional Interconectado (SNI) frente a cambios climáticos estacionales.</p>
 </section>
-<section id="preguntas-de-dominio" class="level2">
-<h2 class="anchored" data-anchor-id="preguntas-de-dominio">Preguntas de Dominio</h2>
+<section id="preguntas-que-se-busca-responder" class="level2">
+<h2 class="anchored" data-anchor-id="preguntas-que-se-busca-responder">Preguntas que se busca responder</h2>
 <p>El análisis busca dar respuesta a las siguientes interrogantes técnicas:<br>
-<strong>1. Distribución de carga:</strong> ¿Cómo se reparte el esfuerzo de generación entre las tres unidades?<br>
+<strong>1. Distribución de carga:</strong> ¿Cómo se reparte las horas de funcionamiento (sincronismo) entre las tres unidades a lo largo del tiempo?<br>
 <strong>2. Estacionalidad:</strong> ¿En qué periodos del año se registran los aportes máximos y mínimos?<br>
 <strong>3. Disponibilidad:</strong> ¿Es posible detectar visualmente periodos de indisponibilidad o generación cero?<br>
 </p>
 </section>
 <section id="descripción-del-dataset" class="level2">
 <h2 class="anchored" data-anchor-id="descripción-del-dataset">Descripción del Dataset</h2>
-<p>Para este estudio se utiliza el conjunto de datos <code>chs_energia.csv</code>, el cual contiene registros de generación horaria (MW/h). El dataset presenta una estructura de tabla temporal con mediciones para cada una de las 24 horas del día, desglosadas por unidad de generación.</p>
+<p>Para este estudio se utiliza el conjunto de datos <code>chs_energia.csv</code>, el cual contiene registros de generación horaria (MW/h). El dataset presenta una estructura de tabla temporal con mediciones para cada una de las 24 horas del día, desglosadas por unidad de generación. Los datos son adquiridos del sistema de medición comercial de la CHS, lo que garantiza su precisión y relevancia para el análisis técnico. La información se ha procesado para asegurar su calidad, eliminando valores atípicos y completando registros faltantes, lo que permite un análisis confiable y detallado del desempeño energético de la central.</p>
 </section>
 <section id="navegación-del-proyecto" class="level2">
 <h2 class="anchored" data-anchor-id="navegación-del-proyecto">Navegación del Proyecto</h2>

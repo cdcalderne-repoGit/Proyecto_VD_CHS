@@ -1,136 +1,220 @@
 ---
-title: "Análisis Visual y Visualizaciones"
+title: "Análisis Técnico - Energético de la Central Hidroeléctrica Sarapullo"
+subtitle: "Análisis Visual"
 execute:
   echo: false
   warning: false
 ---
 
-# Análisis de Desempeño
-Exploración interactiva de la generación horaria y detección de periodos de indisponibilidad.
-
-## Importar los datos
+# Importar los datos
 ```{python}
 import pandas as pd
 import altair as alt
 alt.data_transformers.enable("vegafusion")
 ```
 ```{python}
-Energy_CMS = pd.read_csv("Energia_CMS_final.csv", sep=';') 
+Energy_CMS = pd.read_csv("Energia_CMS_final.csv", sep=';')
+Energy_CMS['GENERACION_MW'] = Energy_CMS['GENERACION_MW'] / 1000
 Energy_CMS['FECHA'] = pd.to_datetime(Energy_CMS['FECHA'])
 Energy_CMS['FECHA_HORA'] = pd.to_datetime(Energy_CMS['FECHA_HORA'])
 
 ```
 
+Se verifica la integridad del dataset:
 ```{python}
 Energy_CMS.info()
 ```
 ```{python}
-Energy_CMS.head()
+Energy_CMS.query("FECHA >= '2022-02-01' and FECHA <= '2022-02-28' and UNIDAD == 'SARAPULLO U1' and GENERACION_MW > 0")
 ```
 
-## Contribución por Unidad (Stacked Area Chart)
+```{python}
+Energy_CMS.query(
+    "FECHA >= '2022-02-01' and FECHA <= '2022-02-28' and UNIDAD == 'SARAPULLO U1' and GENERACION_MW > 0"
+)['GENERACION_MW'].sum()
+```
+
+# 1. ¿Cómo se reparte las horas de funcionamiento (sincronismo) entre las tres unidades a lo largo del tiempo?
+Mediante el gráfico desarrollado en esta sección se identificará las horas de generación a lo largo del tiempo. Es decir, cuantas horas estuvo en funcionamiento cada unidad de generación por mes y por año. El gráfico permitirá identificar si existe un equilibrio en las horas de funcionamiento, este tipo de patrones debe ser simétrico para contribuir a una adecuada planificación y ejecución de los mantenimientos preventivos de las unidades.
+
+## Contribución por Unidad mediante tres tipos de gráficos
 Contexto: ¿Cómo se distribuye la carga total de la central entre las tres unidades a lo largo del tiempo?
 Utilizamos un gráfico de áreas apiladas porque permite visualizar simultáneamente el total generado y la proporción con la que contribuye cada unidad.
 
+```{python}
+# 1. Selección y Filtro base (Solo horas con sincronismo real)
+selection = alt.selection_point(fields=['ANIO'])
+opacity_condition = alt.condition(selection, alt.value(1), alt.value(0.2))
+
+# --- CHART 1: Selector Anual (Izquierda) ---
+chart1 = alt.Chart(Energy_CMS).transform_filter(
+    alt.datum.GENERACION_MW > 0
+).mark_bar().encode(
+    x=alt.X('count(GENERACION_MW):Q', title='Horas Totales Sincronismo'),
+    y=alt.Y('ANIO:N', title='Año'),
+    color=alt.condition(selection, alt.value('#1f77b4'), alt.value('lightgray')),
+    opacity=opacity_condition
+).add_params(selection).properties(width=150, height=250, title="1. Seleccione Año")
+
+# --- CHART 2: Estacionalidad (Derecha) ---
+chart2 = alt.Chart(Energy_CMS).transform_filter(
+    alt.datum.GENERACION_MW > 0
+).transform_filter(selection).mark_area(opacity=0.7, line=True).encode(
+    x=alt.X('month(FECHA_HORA):T', title='Ciclo Mensual'),
+    y=alt.Y('count(GENERACION_MW):Q', title='Horas Mensuales', stack='zero'),
+    color=alt.Color('UNIDAD:N', scale=alt.Scale(scheme='tableau10'), title='Unidad'),
+    tooltip=[
+        alt.Tooltip('month(FECHA_HORA):T', title='Mes'), 
+        alt.Tooltip('UNIDAD:N'), 
+        alt.Tooltip('count(GENERACION_MW):Q', title='Horas')
+    ]
+).properties(width=450, height=250, title="2. Distribución Temporal (Sincronismo)")
+
+# Capa de barras al 100%
+bars = alt.Chart(Energy_CMS).transform_filter(
+    alt.datum.GENERACION_MW > 0
+).transform_filter(selection).mark_bar().encode(
+    x=alt.X('count(GENERACION_MW):Q', 
+            stack="normalize", 
+            axis=alt.Axis(format='%'), 
+            title='Participación Relativa (%)'),
+    y=alt.Y('ANIO:N', title='Año'),
+    color=alt.Color('UNIDAD:N', legend=alt.Legend(orient="bottom")),
+    tooltip=[
+        alt.Tooltip('ANIO:N'),
+        alt.Tooltip('UNIDAD:N'), 
+        alt.Tooltip('count(GENERACION_MW):Q', title='Horas Totales')
+    ]
+)
+
+# Usamos un valor constante de 0.333 y 0.666 para la referencia de simetría
+target_line = alt.Chart(pd.DataFrame({'x': [0.3333, 0.6666]})).mark_rule(
+    color='green', 
+    strokeDash=[5, 5], 
+    size=2
+).encode(x='x:Q')
+
+# Combinar barras y línea
+chart3_final = (bars + target_line).properties(
+    width=650, 
+    height=150, 
+    title="Verificación de Equilibrio en Horas de Sincronismo"
+)
+
+# (Chart1 horizontal con Chart2) y el resultado vertical con Chart3
+dashboard = ((chart1 | chart2) & chart3_final).configure_axis(
+    grid=True
+).configure_view(
+    strokeWidth=0
+)
+
+dashboard
+```
+## Análisis del gráfico
+Gráfico 1. Actúa como filtro para escoger el año de visualización, también brinda información de la magnitud total de horas del año (Productividad).
+
+Gráfico 2: Muestra la distribución temporal de las horas de sincronismo. Facilita la identificación de "huecos" en la generación por posibles mantenimientos programados o fallas.
+
+Gráfico 3: Sirve como herramienta para identificar simetría en las horas de funcionamiento, incluye marcas de referencia al 33% para identificar desequilibrios en las horas de funcionamiento.
+
+
+# 2. ¿En qué periodos del año se registran los aportes energéticos máximos y mínimos?
+El gráfico desarrollado en esta sección facilita la identificación de los aportes energéticos máximos y mínimos en función de la estacionalidad de los caudales de ingreso a la captación Pilatón. Es decir, identificar en que meses se registran los mayores aportes energéticos asociados a la temporada de altos caudales y los menores aportes energéticos en la temporada de sequía. Esta información contribuye a la planificación de los mantenimientos durante los periodos en los que la generación se ve mermada por la falta sequía en los ríos que forman parte de la vertiente del Pacífico.
+
+## Gráfico de barras apiladas con filtro por año
+Contexto: Se emplea un gráfico de áreas apiladas porque permite visualizar simultáneamente el total generado y la proporción con la que contribuye cada unidad a lo largo del tiempo. Se emplea un gráfico adiconal que permite filtrar por años los aportes mensuales energéticos facilitando la identificación de la estacionalidad.
 
 ```{python}
-# 1. Definimos un selector de intervalo para el tiempo (Miniatura inferior)
-brush = alt.selection_interval(encodings=['x'])
+# 1. Preparación de datos (Extraemos el mes para evitar el KeyError)
+# Asegúrate de haber dividido GENERACION_MW para 1000 antes si no lo has hecho
+Energy_CMS['MES'] = Energy_CMS['FECHA_HORA'].dt.month
 
-# 2. Configuración del Gráfico Principal (Mapa de Calor / Rectángulos)
-# Agrupamos por Mes y Unidad para identificar patrones rápidamente
-main_chart = alt.Chart(Energy_CMS).mark_bar().encode(
-    x=alt.X('yearmonth(FECHA_HORA):T', 
-            title='Mes y Año',
-            scale=alt.Scale(domain=brush)), # Sincronizado con el mini-gráfico
-    y=alt.Y('sum(GENERACION_MW):Q', title='Unidad de Generación'),
-    color=alt.Color('UNIDAD:N', 
-                    title='Energía Total (MWh)',
-                    scale=alt.Scale(scheme='viridis')), # Amarillo = Más generación
+# 2. Selección y Opacidad
+selection = alt.selection_point(fields=['ANIO'])
+opacity_condition = alt.condition(selection, alt.value(1), alt.value(0.2))
+
+# --- CHART 1: Selector de Años ---
+chart1 = alt.Chart(Energy_CMS).mark_bar().encode(
+    x=alt.X('sum(GENERACION_MW):Q', title='Energía Anual (MWh)'),
+    y=alt.Y('ANIO:N', title='Año'),
+    color=alt.condition(selection, alt.value('#2ca02c'), alt.value('lightgray')),
+    opacity=opacity_condition,
+    tooltip=[alt.Tooltip('sum(GENERACION_MW):Q', format=',.2f', title='Total MWh')]
+).add_params(selection).properties(width=150, height=300, title="1. Filtro Anual")
+
+# --- CHART 2: Detalle Mensual ---
+base_det = alt.Chart(Energy_CMS).transform_filter(
+    alt.datum.GENERACION_MW > 0
+).transform_filter(selection)
+
+# Capa de Áreas (Reparto por unidad)
+areas = base_det.mark_area(opacity=0.6, line=True).encode(
+    x=alt.X('MES:O', title='Mes (1=Ene, 12=Dic)'),
+    y=alt.Y('sum(GENERACION_MW):Q', title='Energía Mensual (MWh)', stack='zero'),
+    color=alt.Color('UNIDAD:N', title='Unidad', scale=alt.Scale(scheme='tableau10')),
     tooltip=[
-        alt.Tooltip('yearmonth(FECHA_HORA):T', title='Mes'),
-        alt.Tooltip('UNIDAD:N', title='Unidad'),
-        alt.Tooltip('sum(GENERACION_MW):Q', title='Total MWh', format='.2f'),
-        alt.Tooltip('count(GENERACION_MW):Q', title='Horas Operadas') # Para ver disponibilidad
+        alt.Tooltip('MES:O', title='Mes'),
+        alt.Tooltip('UNIDAD:N'),
+        alt.Tooltip('sum(GENERACION_MW):Q', title='Energía (MWh)', format=',.2f')
     ]
-).properties(
-    width=800,
-    height=200,
+)
+
+# Capa de Línea de mínimo Mensual 
+min_line = base_det.transform_aggregate(
+    total_mes='sum(GENERACION_MW)',
+    groupby=['MES']
+).transform_aggregate(
+    min_gen='min(total_mes)'
+).mark_rule(color='red', strokeDash=[4,4], size=2).encode(
+    y='min_gen:Q'
+)
+
+# Capa de Línea de medio Mensual 
+mean_line = base_det.transform_aggregate(
+    total_mes='sum(GENERACION_MW)',
+    groupby=['MES']
+).transform_aggregate(
+    mean_gen='mean(total_mes)'
+).mark_rule(color='green', strokeDash=[4,4], size=2).encode(
+    y='mean_gen:Q'
+)
+
+
+# Capa de Puntos para marcar el Máximo y Mínimo del año seleccionado
+# Esto ayuda a evitar el error de apreciación visual en las áreas
+points = base_det.transform_aggregate(
+    total_mes='sum(GENERACION_MW)',
+    groupby=['MES']
+).mark_point(size=100, filled=True).encode(
+    x='MES:O',
+    y=alt.Y('total_mes:Q'),
+    color=alt.value('black'),
+    tooltip=[alt.Tooltip('total_mes:Q', format=',.2f', title='Total del Mes')]
+)
+
+# Combinación del gráfico
+chart2_final = (areas + min_line + mean_line + points).properties(
+    width=550,
+    height=300,
     title=alt.TitleParams(
-        text="Intensidad de Generación Mensual por Unidad (Sarapullo)",
-        subtitle="Los colores claros indican meses de mayor despacho energético",
+        text="Aporte Energético Mensual CHS (Pilatón)",
+        subtitle="Identificación de máximos (puntos), mínimos (línea roja) y media (línea verde) de generación",
         anchor='start'
     )
 )
 
-# 3. Gráfico de Navegación (Miniatura de barras inferior)
-# Muestra la generación total de la central por mes para guiar el desplazamiento
-nav_chart = alt.Chart(Energy_CMS).mark_bar(color='lightgray').encode(
-    x=alt.X('yearmonth(FECHA_HORA):T', title='Desliza para navegar por los meses'),
-    y=alt.Y('sum(GENERACION_MW):Q', axis=None)
-).properties(
-    width=800,
-    height=60
-).add_params(brush)
-
-# 4. Concatenación final
-final_dashboard = alt.vconcat(main_chart, nav_chart).configure_view(stroke=None)
-
-final_dashboard.display()
+dashboard = (chart1 | chart2_final).configure_axis(grid=True).configure_view(strokeWidth=0)
+dashboard
 ```
 
-```{python}
-# 1. Definimos el selector de rango temporal (Navegador inferior)
-brush = alt.selection_interval(encodings=['x'])
+## Análisis del gráfico
+Identificación de Mínimos de generación: Cualquier mes cuya área total quede por debajo de la línea roja punteada es un periodo donde la central operó en el límite inferior anual. Esto es relevante para programar los mantenimientos preventivos más largos.
 
-# 2. GRÁFICO PRINCIPAL: Barras Apiladas Mensuales
-main_chart = alt.Chart(Energy_CMS).transform_filter(
-    # Filtro crítico: Solo considerar filas con generación > 0 para el cálculo
-    alt.datum.GENERACION_MW > 0
-).mark_bar().encode(
-    x=alt.X('yearmonth(FECHA_HORA):T', 
-            title='Mes y Año',
-            scale=alt.Scale(domain=brush)),
-    
-    y=alt.Y('sum(GENERACION_MW):Q', 
-            title='Energía Total Mensual (MWh)',
-            stack='zero'),
-    
-    color=alt.Color('UNIDAD:N', 
-                    title='Unidad de Generación',
-                    scale=alt.Scale(scheme='category10')),
-    
-    tooltip=[
-        alt.Tooltip('yearmonth(FECHA_HORA):T', title='Mes'),
-        alt.Tooltip('UNIDAD:N', title='Unidad'),
-        alt.Tooltip('sum(GENERACION_MW):Q', title='Energía (MWh)', format='.2f'),
-        # Ahora este conteo solo cuenta las filas > 0 gracias al transform_filter
-        alt.Tooltip('count(GENERACION_MW):Q', title='Horas de Operación Real')
-    ]
-).properties(
-    width=800,
-    height=400,
-    title=alt.TitleParams(
-        text="Generación Mensual CH Sarapullo (Solo Horas Operativas)",
-        subtitle="Suma de energía por unidad y conteo de horas con generación > 0",
-        anchor='start'
-    )
-).interactive()
+Identificación de Máximos de generación: Los meses que superan la línea verde representan el pico de la vertiente del Pacífico. En estos meses, cualquier indisponibilidad de una unidad representa una pérdida económica crítica por energía no generada (vertimiento).
 
-# 3. GRÁFICO DE NAVEGACIÓN (Miniatura inferior)
-nav_chart = alt.Chart(Energy_CMS).mark_bar(color='lightgray').encode(
-    x=alt.X('yearmonth(FECHA_HORA):T', title='Desliza para seleccionar el periodo de interés'),
-    y=alt.Y('sum(GENERACION_MW):Q', axis=None)
-).properties(
-    width=800,
-    height=60
-).add_params(brush)
 
-# 4. Composición final
-final_dashboard = alt.vconcat(main_chart, nav_chart).configure_view(stroke=None)
-
-final_dashboard.display()
-```
+## Gráfico adicional: Desempeño vs Referencia Operativa
+Contexto: Este gráfico permite comparar el desempeño de la central con una referencia operativa de 16 MW, que corresponde a la potencia máxima de generación de cada unidad. Esto facilita la identificación de periodos en los que la central opera por debajo de su capacidad óptima, lo que puede estar asociado a factores como la variabilidad hídrica o mantenimientos programados.
 
 ```{python}
 # 1. Selector de rango temporal
@@ -198,7 +282,7 @@ main_chart = alt.layer(
     height=400,
     title=alt.TitleParams(
         text="Desempeño CH Sarapullo vs Referencia Operativa",
-        subtitle="Barras: Energía (MWh) | Líneas: Carga Promedio (MW) | Línea Roja: 14.7 MW",
+        subtitle="Barras: Energía (MWh) | Líneas: Carga Promedio (MW) | Línea Roja: Referencia max. potencia",
         anchor='start'
     )
 )
@@ -216,122 +300,53 @@ final_dashboard.display()
 ```
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Heatmap de Ciclo Diario e Indisponibilidad
-Utilizamos mark_rect() para crear una matriz que cruza el día del mes con la hora de generación . Se aplica una condición lógica para resaltar en rojo los valores de generación cero, facilitando la detección de fallas técnicas .
-
-```{python}
-# 1. Definimos un selector de intervalo para el tiempo (Miniatura inferior)
-brush = alt.selection_interval(encodings=['x'])
-
-# 2. Configuración del Gráfico Principal (Mapa de Calor / Rectángulos)
-# Agrupamos por Mes y Unidad para identificar patrones rápidamente
-main_chart = alt.Chart(Energy_CMS).mark_rect().encode(
-    x=alt.X('yearmonth(FECHA_HORA):T', 
-            title='Mes y Año',
-            scale=alt.Scale(domain=brush)), # Sincronizado con el mini-gráfico
-    y=alt.Y('UNIDAD:N', title='Unidad de Generación'),
-    color=alt.Color('sum(GENERACION_MW):Q', 
-                    title='Energía Total (MWh)',
-                    scale=alt.Scale(scheme='viridis')), # Amarillo = Más generación
-    tooltip=[
-        alt.Tooltip('yearmonth(FECHA_HORA):T', title='Mes'),
-        alt.Tooltip('UNIDAD:N', title='Unidad'),
-        alt.Tooltip('sum(GENERACION_MW):Q', title='Total MWh', format='.2f'),
-        alt.Tooltip('count(GENERACION_MW):Q', title='Horas Operadas') # Para ver disponibilidad
-    ]
-).properties(
-    width=800,
-    height=200,
-    title=alt.TitleParams(
-        text="Intensidad de Generación Mensual por Unidad (Sarapullo)",
-        subtitle="Los colores claros indican meses de mayor despacho energético",
-        anchor='start'
-    )
-)
-
-# 3. Gráfico de Navegación (Miniatura de barras inferior)
-# Muestra la generación total de la central por mes para guiar el desplazamiento
-nav_chart = alt.Chart(Energy_CMS).mark_bar(color='lightgray').encode(
-    x=alt.X('yearmonth(FECHA_HORA):T', title='Desliza para navegar por los meses'),
-    y=alt.Y('sum(GENERACION_MW):Q', axis=None)
-).properties(
-    width=800,
-    height=60
-).add_params(brush)
-
-# 4. Concatenación final
-final_dashboard = alt.vconcat(main_chart, nav_chart).configure_view(stroke=None)
-
-final_dashboard.display()
-```
-
-
-## Boxplots Mensuales (Variabilidad Hídrica)
-Este gráfico resume la distribución de la generación por mes, permitiendo comparar la estabilidad energética frente a factores climáticos mediante el uso de medianas y cuartiles .
-```{python}
-boxplot_mensual = alt.Chart(Energy_CMS).mark_boxplot(extent='min-max').encode(
-    x=alt.X('month(FECHA_HORA):O', title='Mes del Año'),
-    y=alt.Y('GENERACION_MW:Q', title='Generación (MW/h)'),
-    color=alt.Color('UNIDAD:N', title='Unidad')
-).properties(
-    width=700,
-    height=300,
-    title=alt.TitleParams(
-        text="Variabilidad y Estabilidad de la Generación Mensual",
-        subtitle="Análisis de dispersión para evaluar el impacto de la variabilidad hídrica"
-    )
-)
-
-boxplot_mensual.display()
-```
+# 3. ¿Es posible detectar visualmente periodos de indisponibilidad o generación cero?
+El gráfico desarrollado en esta sección facilita la identificación de periodos de indisponibilidad o generación cero mediante el uso de heatmaps. Estos gráficos permiten visualizar patrones diarios y estacionales de generación, destacando los momentos en los que la generación fue nula, lo que puede indicar fallas técnicas o mantenimientos programados.
 
 ## Heatmap Estacional (Mes vs Día)
-Este segundo mapa de calor permite observar tendencias de largo plazo, identificando meses de alta o baja generación a nivel macro.
+Utilizamos mark_rect() para crear una matriz que cruza el día del mes con la hora de generación .Este mapa de calor permite observar tendencias de largo plazo, identificando meses de alta o baja generación a nivel de detalle diario. La intensidad del color representa el promedio de generación en cada combinación de día y hora, facilitando la detección de patrones estacionales y principalmente las etapas de transición de la estacionalidad.
+
 ```{python}
-heatmap_estacional = alt.Chart(Energy_CMS).mark_rect().encode(
-    x=alt.X('date(FECHA):O', title='Día'),
+import altair as alt
+
+# 1. Gráfico estático y ligero
+# Filtramos un año específico antes de graficar para reducir la carga de datos (ejemplo: 2025)
+df_heatmap = Energy_CMS[Energy_CMS['ANIO'] == 2025]
+
+heatmap = alt.Chart(df_heatmap).mark_rect().encode(
+    x=alt.X('date(FECHA):O', title='Día del Mes'),
     y=alt.Y('month(FECHA):O', title='Mes'),
-    color=alt.Color('mean(GENERACION_MW):Q', scale=alt.Scale(scheme='blues'), title='Promedio MW/h'),
+    color=alt.Color('mean(GENERACION_MW):Q', 
+        scale=alt.Scale(
+            domain=[0, 5, 13], 
+            range=['#d62728', '#ff7f0e', '#2ca02c'] # Rojo (Paro), Naranja (Vib), Verde (OK)
+        ), 
+        title='Gen. Promedio (MWh)'
+    ),
     tooltip=[
         alt.Tooltip('month(FECHA):O', title='Mes'),
-        alt.Tooltip('mean(GENERACION_MW):Q', title='Promedio Mensual', format='.2f')
+        alt.Tooltip('date(FECHA):O', title='Día'),
+        alt.Tooltip('mean(GENERACION_MW):Q', title='Potencia Promedio', format='.2f')
     ]
 ).properties(
-    width=800,
-    height=300,
-    title="Análisis Estacional de Aporte Energético"
+    width=600,
+    height=280,
+    title=alt.TitleParams(
+        text="Mapa de Calor de Disponibilidad Energética (2022-2025)",
+        anchor='start'
+    )
+).configure_view(
+    strokeWidth=0
+).configure_axis(
+    grid=False
 )
 
-heatmap_estacional.display()
+heatmap.display()
 ```
+
+## Análisis del gráfico
+El Heatmap Estacional permite concluir que, efectivamente, es posible detectar periodos de indisponibilidad mediante la identificación de discontinuidades cromáticas en la matriz de generación.
+
+La Detección de Fallas Forzadas vs. Mantenimiento: La transición abrupta hacia tonos rojos en días específicos, rompiendo la tendencia de los días adyacentes, actúa como un indicador visual de indisponibilidad técnica. Mientras que los periodos de mantenimiento programado se observan como bloques de celdas rojas continuas y uniformes, las fallas forzadas se manifiestan como interrupciones esporádicas o "puntos calientes" de baja generación que no coinciden con la estacionalidad del caudal.
+
+Patrones de Estacionalidad y Generación Nula: El mapa de calor revela que los periodos de generación nula coinciden frecuentemente con la temporada de estiaje de la cuenca del río Pilatón. Sin embargo, la presencia de celdas rojas durante los meses de máximos aportes (periodos verdes) es la señal más clara de indisponibilidad por causas externas o fallas electromecánicas, permitiendo a la gerencia auditar rápidamente la eficiencia operativa fuera de las limitaciones hidrológicas.

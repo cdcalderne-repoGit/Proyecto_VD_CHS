@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Limpieza y Preparación de Datos – Índices de producción de la CHS</title>
+<title>Análisis Técnico - Energético de la Central Hidroeléctrica Sarapullo – Índices de producción de la CHS</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -160,7 +160,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#proceso-etl" id="toc-proceso-etl" class="nav-link" data-scroll-target="#proceso-etl">Proceso ETL</a>
   <ul class="collapse">
   <li><a href="#carga-del-dataset" id="toc-carga-del-dataset" class="nav-link" data-scroll-target="#carga-del-dataset">1. Carga del Dataset</a></li>
-  <li><a href="#transformación-a-formato-tidy-data" id="toc-transformación-a-formato-tidy-data" class="nav-link" data-scroll-target="#transformación-a-formato-tidy-data">2. Transformación a Formato Tidy Data</a></li>
+  <li><a href="#transformación-a-formato-ancho-limpieza-de-datos-e-impugación-de-valores" id="toc-transformación-a-formato-ancho-limpieza-de-datos-e-impugación-de-valores" class="nav-link" data-scroll-target="#transformación-a-formato-ancho-limpieza-de-datos-e-impugación-de-valores">2. Transformación a Formato ancho, limpieza de datos e impugación de valores</a></li>
   </ul></li>
   <li><a href="#justificación-de-decisiones" id="toc-justificación-de-decisiones" class="nav-link" data-scroll-target="#justificación-de-decisiones">Justificación de decisiones</a></li>
   <li><a href="#exportar-datos-listos-para-visualización" id="toc-exportar-datos-listos-para-visualización" class="nav-link" data-scroll-target="#exportar-datos-listos-para-visualización">Exportar datos listos para visualización</a></li>
@@ -173,7 +173,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Limpieza y Preparación de Datos</h1>
+<h1 class="title">Análisis Técnico - Energético de la Central Hidroeléctrica Sarapullo</h1>
+<p class="subtitle lead">Limpieza y Preparación de Datos</p>
 </div>
 
 
@@ -192,120 +193,125 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="proceso-de-ingeniería-de-datos" class="level1">
 <h1>Proceso de Ingeniería de Datos</h1>
-<p>En esta sección se documenta la transformación del dataset original a un formato apto para el análisis estadístico.</p>
+<p>En esta sección se documenta el proceso de adquisición de datos hasta la transformación del dataset original a un formato apto para el análisis estadístico y elaboración de visualizaciones técnicas. El objetivo es garantizar que los datos estén limpios, estructurados y listos para responder a las preguntas de dominio planteadas en el análisis gráfico.</p>
 <section id="proceso-etl" class="level2">
 <h2 class="anchored" data-anchor-id="proceso-etl">Proceso ETL</h2>
-<p>Para que las visualizaciones técnicas sean precisas, los datos deben seguir la estructura de <strong>Tidy Data</strong>: cada variable debe ser una columna y cada observación una fila [1]. El dataset original <code>chs_energia.csv</code> presenta un formato “ancho” con una columna por cada hora del día, lo cual dificulta el análisis estadístico.</p>
+<p>Para que las visualizaciones técnicas sean precisas, los datos deben seguir la estructura de <strong>formato fila</strong>: cada variable debe ser una columna y cada observación una fila. El dataset original <code>chs_energia.csv</code> presenta un formato “ancho” con una columna por cada hora del día, lo cual dificultaría el análisis estadístico.</p>
 <section id="carga-del-dataset" class="level3">
 <h3 class="anchored" data-anchor-id="carga-del-dataset">1. Carga del Dataset</h3>
-<p>Cargamos los datos utilizando Pandas, gestionando los separadores de miles (punto) y decimales (coma) detectados en el archivo original [3].</p>
-<div id="1fc46c6d" class="cell" data-execution_count="1">
+<p>Cargamos los datos utilizando Pandas, gestionando los separadores de miles (punto) y decimales (coma) detectados en el archivo original.</p>
+<div id="e3768d35" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Importe de librerias</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> unicodedata</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> altair <span class="im">as</span> alt</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Función para limpieza de datos</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> limpiar_texto(texto):</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> pd.isna(texto) <span class="kw">or</span> <span class="kw">not</span> <span class="bu">isinstance</span>(texto, <span class="bu">str</span>):</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> texto</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Normalizar (separa la letra del acento) y eliminar acentos</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    texto <span class="op">=</span> unicodedata.normalize(<span class="st">'NFD'</span>, texto)</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    texto <span class="op">=</span> <span class="st">""</span>.join([c <span class="cf">for</span> c <span class="kw">in</span> texto <span class="cf">if</span> unicodedata.category(c) <span class="op">!=</span> <span class="st">'Mn'</span>])</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Mayúsculas y eliminar espacios extra</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> texto.upper().strip()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> altair <span class="im">as</span> alt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="5a9c8c4c" class="cell" data-execution_count="2">
+<div id="61c01b35" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Importar la data</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>ruta_archivo <span class="op">=</span> <span class="st">"C:/Users/danie/OneDrive</span><span class="er">\</span><span class="st">Documentos/17. MasterDC/3. Titulacion/1. Proyecto/Datos_CHTP_15012026/CHS_ENERGIA.xlsx"</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>df_raw <span class="op">=</span> pd.read_excel(ruta_archivo, decimal<span class="op">=</span><span class="st">","</span>, thousands<span class="op">=</span><span class="st">"."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Función para limpieza de datos</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> limpiar_texto(texto):</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> pd.isna(texto) <span class="kw">or</span> <span class="kw">not</span> <span class="bu">isinstance</span>(texto, <span class="bu">str</span>):</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> texto</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Normalizar (separa la letra del acento) y eliminar acentos</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    texto <span class="op">=</span> unicodedata.normalize(<span class="st">'NFD'</span>, texto)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    texto <span class="op">=</span> <span class="st">""</span>.join([c <span class="cf">for</span> c <span class="kw">in</span> texto <span class="cf">if</span> unicodedata.category(c) <span class="op">!=</span> <span class="st">'Mn'</span>])</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Mayúsculas y eliminar espacios extra</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> texto.upper().strip()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div id="fcc12f4b" class="cell" data-execution_count="3">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Importar la data</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>ruta_archivo <span class="op">=</span> <span class="st">"C:/Users/danie/OneDrive</span><span class="er">\</span><span class="st">Documentos/17. MasterDC/3. Titulacion/1. Proyecto/Datos_CHTP_15012026/CHS_ENERGIA.xlsx"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>df_raw <span class="op">=</span> pd.read_excel(ruta_archivo, decimal<span class="op">=</span><span class="st">","</span>, thousands<span class="op">=</span><span class="st">"."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 </section>
-<section id="transformación-a-formato-tidy-data" class="level3">
-<h3 class="anchored" data-anchor-id="transformación-a-formato-tidy-data">2. Transformación a Formato Tidy Data</h3>
+<section id="transformación-a-formato-ancho-limpieza-de-datos-e-impugación-de-valores" class="level3">
+<h3 class="anchored" data-anchor-id="transformación-a-formato-ancho-limpieza-de-datos-e-impugación-de-valores">2. Transformación a Formato ancho, limpieza de datos e impugación de valores</h3>
 <p>Utilizamos la función melt para consolidar las 24 columnas de horas en una sola variable categórica llamada Hora y una variable cuantitativa llamada <code>Generacion_MW</code>. Originalmente el dataset contiene el caracter <code>-</code> ante ausencia de generación; este es reemplazado por el valor numérico <code>0</code>.</p>
-<div id="240bf551" class="cell" data-execution_count="3">
+<p>Se identifica si existen filas con fechas duplicadas:</p>
+<div id="847b5bb7" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Aseguramos que 'Hora 1' sea numérica (evita errores de tipo 'object')</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>df_raw[<span class="st">'Hora 1'</span>] <span class="op">=</span> pd.to_numeric(df_raw[<span class="st">'Hora 1'</span>], errors<span class="op">=</span><span class="st">'coerce'</span>)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Limpiar etiquetas de COLUMNAS</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>df_raw.columns <span class="op">=</span> [limpiar_texto(col) <span class="cf">for</span> col <span class="kw">in</span> df_raw.columns]</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Actualizo el nombre de la columna año</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>df_raw <span class="op">=</span> df_raw.rename(columns<span class="op">=</span>{<span class="st">'ANO'</span>: <span class="st">'ANIO'</span>, <span class="st">'DIA'</span>:<span class="st">'FECHA'</span> })</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Limpiar contenido de la columna UNIDAD</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Nota: Ahora la columna se llama 'UNIDAD' en mayúsculas por el paso anterior</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>df_raw[<span class="st">'UNIDAD'</span>] <span class="op">=</span> df_raw[<span class="st">'UNIDAD'</span>].<span class="bu">apply</span>(limpiar_texto)</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Consolidación (Melt) con los nombres ya limpios</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>id_vars <span class="op">=</span> [<span class="st">'UNIDAD'</span>, <span class="st">'ANIO'</span>, <span class="st">'FECHA'</span>] <span class="co"># Usamos los nombres ya normalizados</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>hora_cols <span class="op">=</span> [<span class="ss">f'HORA </span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">'</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">25</span>)]</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>df_consolidado <span class="op">=</span> df_raw.melt(</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    id_vars<span class="op">=</span>id_vars,</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    value_vars<span class="op">=</span>hora_cols,</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    var_name<span class="op">=</span><span class="st">'HORA'</span>,</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    value_name<span class="op">=</span><span class="st">'GENERACION_MW'</span></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Limpieza final de la variable HORA para que sea solo el número</span></span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>df_consolidado[<span class="st">'HORA'</span>] <span class="op">=</span> (</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    df_consolidado[<span class="st">'HORA'</span>]</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    .<span class="bu">str</span>.extract(<span class="vs">r'</span><span class="kw">(</span><span class="dv">\d</span><span class="op">+</span><span class="kw">)</span><span class="vs">'</span>)  <span class="co"># r indica raw string, más seguro para regex</span></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    .fillna(<span class="dv">0</span>)              <span class="co"># Si no encuentra número, pone 0</span></span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    .astype(<span class="bu">int</span>)</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Limpieza de valores: los guiones '-' se interpretan como ausencia de generación (0)</span></span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>df_consolidado[<span class="st">'GENERACION_MW'</span>] <span class="op">=</span> (</span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    df_consolidado[<span class="st">'GENERACION_MW'</span>]</span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>    .replace(<span class="st">'-'</span>, <span class="st">'0'</span>)</span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>    .pipe(pd.to_numeric, errors<span class="op">=</span><span class="st">'coerce'</span>) <span class="co"># Convierte a float y deja NaN si hay error</span></span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>    .fillna(<span class="dv">0</span>)                            <span class="co"># Convierte los NaN en 0</span></span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Aseguramos que DIA sea tipo datetime</span></span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>df_consolidado[<span class="st">'FECHA'</span>] <span class="op">=</span> pd.to_datetime(df_consolidado[<span class="st">'FECHA'</span>])</span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Creamos la columna FECHA_HORA</span></span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Sumamos a la fecha original una cantidad de horas proporcional al valor de 'HORA'</span></span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>df_consolidado[<span class="st">'FECHA_HORA'</span>] <span class="op">=</span> df_consolidado[<span class="st">'FECHA'</span>] <span class="op">+</span> pd.to_timedelta(df_consolidado[<span class="st">'HORA'</span>], unit<span class="op">=</span><span class="st">'h'</span>)</span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Elimino errores por asignación de la hora 24 (solapamiento por hora 0 del día siguiente)</span></span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>df_consolidado[<span class="st">'FECHA_HORA'</span>] <span class="op">=</span> np.where(</span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>    df_consolidado[<span class="st">'HORA'</span>] <span class="op">==</span> <span class="dv">24</span>,</span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>    df_consolidado[<span class="st">'FECHA_HORA'</span>] <span class="op">-</span> pd.Timedelta(seconds<span class="op">=</span><span class="dv">1</span>),</span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>    df_consolidado[<span class="st">'FECHA_HORA'</span>]</span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a><span class="co"># identifico valores duplicados</span></span>
-<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>duplicados <span class="op">=</span> df_consolidado[df_consolidado.duplicated(subset<span class="op">=</span>[<span class="st">'UNIDAD'</span>, <span class="st">'FECHA_HORA'</span>], keep<span class="op">=</span><span class="va">False</span>)]</span>
-<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Se encontraron </span><span class="sc">{</span><span class="bu">len</span>(duplicados)<span class="sc">}</span><span class="ss"> filas en conflicto."</span>)</span>
-<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a><span class="co"># Definimos el orden deseado de las columnas</span></span>
-<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>columnas_ordenadas <span class="op">=</span> [<span class="st">'FECHA_HORA'</span>, <span class="st">'FECHA'</span>, <span class="st">'ANIO'</span>, <span class="st">'HORA'</span>, <span class="st">'UNIDAD'</span>, <span class="st">'GENERACION_MW'</span>]</span>
-<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a><span class="co"># Reorganizamos el DataFrame</span></span>
-<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>df_consolidado <span class="op">=</span> df_consolidado[columnas_ordenadas]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Aseguramos que 'Hora 1' sea numérica (evita errores de tipo 'object')</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>df_raw[<span class="st">'Hora 1'</span>] <span class="op">=</span> pd.to_numeric(df_raw[<span class="st">'Hora 1'</span>], errors<span class="op">=</span><span class="st">'coerce'</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Limpiar etiquetas de COLUMNAS</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>df_raw.columns <span class="op">=</span> [limpiar_texto(col) <span class="cf">for</span> col <span class="kw">in</span> df_raw.columns]</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Actualizo el nombre de la columna año</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>df_raw <span class="op">=</span> df_raw.rename(columns<span class="op">=</span>{<span class="st">'ANO'</span>: <span class="st">'ANIO'</span>, <span class="st">'DIA'</span>:<span class="st">'FECHA'</span> })</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Limpiar contenido de la columna UNIDAD</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Nota: Ahora la columna se llama 'UNIDAD' en mayúsculas por el paso anterior</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>df_raw[<span class="st">'UNIDAD'</span>] <span class="op">=</span> df_raw[<span class="st">'UNIDAD'</span>].<span class="bu">apply</span>(limpiar_texto)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Consolidación (Melt) con los nombres ya limpios</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>id_vars <span class="op">=</span> [<span class="st">'UNIDAD'</span>, <span class="st">'ANIO'</span>, <span class="st">'FECHA'</span>] <span class="co"># Usamos los nombres ya normalizados</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>hora_cols <span class="op">=</span> [<span class="ss">f'HORA </span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">'</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">25</span>)]</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>df_consolidado <span class="op">=</span> df_raw.melt(</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    id_vars<span class="op">=</span>id_vars,</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    value_vars<span class="op">=</span>hora_cols,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    var_name<span class="op">=</span><span class="st">'HORA'</span>,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    value_name<span class="op">=</span><span class="st">'GENERACION_MW'</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Limpieza final de la variable HORA para que sea solo el número</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>df_consolidado[<span class="st">'HORA'</span>] <span class="op">=</span> (</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>    df_consolidado[<span class="st">'HORA'</span>]</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>    .<span class="bu">str</span>.extract(<span class="vs">r'</span><span class="kw">(</span><span class="dv">\d</span><span class="op">+</span><span class="kw">)</span><span class="vs">'</span>)  <span class="co"># r indica raw string, más seguro para regex</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>    .fillna(<span class="dv">0</span>)              <span class="co"># Si no encuentra número, pone 0</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    .astype(<span class="bu">int</span>)</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Limpieza de valores: los guiones '-' se interpretan como ausencia de generación (0)</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>df_consolidado[<span class="st">'GENERACION_MW'</span>] <span class="op">=</span> (</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>    df_consolidado[<span class="st">'GENERACION_MW'</span>]</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>    .replace(<span class="st">'-'</span>, <span class="st">'0'</span>)</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>    .pipe(pd.to_numeric, errors<span class="op">=</span><span class="st">'coerce'</span>) <span class="co"># Convierte a float y deja NaN si hay error</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>    .fillna(<span class="dv">0</span>)                            <span class="co"># Convierte los NaN en 0</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Aseguramos que DIA sea tipo datetime</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>df_consolidado[<span class="st">'FECHA'</span>] <span class="op">=</span> pd.to_datetime(df_consolidado[<span class="st">'FECHA'</span>])</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Creamos la columna FECHA_HORA</span></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Sumamos a la fecha original una cantidad de horas proporcional al valor de 'HORA'</span></span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>df_consolidado[<span class="st">'FECHA_HORA'</span>] <span class="op">=</span> df_consolidado[<span class="st">'FECHA'</span>] <span class="op">+</span> pd.to_timedelta(df_consolidado[<span class="st">'HORA'</span>], unit<span class="op">=</span><span class="st">'h'</span>)</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Elimino errores por asignación de la hora 24 (solapamiento por hora 0 del día siguiente)</span></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>df_consolidado[<span class="st">'FECHA_HORA'</span>] <span class="op">=</span> np.where(</span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>    df_consolidado[<span class="st">'HORA'</span>] <span class="op">==</span> <span class="dv">24</span>,</span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>    df_consolidado[<span class="st">'FECHA_HORA'</span>] <span class="op">-</span> pd.Timedelta(seconds<span class="op">=</span><span class="dv">1</span>),</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>    df_consolidado[<span class="st">'FECHA_HORA'</span>]</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a><span class="co"># identifico valores duplicados</span></span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>duplicados <span class="op">=</span> df_consolidado[df_consolidado.duplicated(subset<span class="op">=</span>[<span class="st">'UNIDAD'</span>, <span class="st">'FECHA_HORA'</span>], keep<span class="op">=</span><span class="va">False</span>)]</span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Se encontraron </span><span class="sc">{</span><span class="bu">len</span>(duplicados)<span class="sc">}</span><span class="ss"> filas en conflicto."</span>)</span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a><span class="co"># Definimos el orden deseado de las columnas</span></span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>columnas_ordenadas <span class="op">=</span> [<span class="st">'FECHA_HORA'</span>, <span class="st">'FECHA'</span>, <span class="st">'ANIO'</span>, <span class="st">'HORA'</span>, <span class="st">'UNIDAD'</span>, <span class="st">'GENERACION_MW'</span>]</span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a><span class="co"># Reorganizamos el DataFrame</span></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>df_consolidado <span class="op">=</span> df_consolidado[columnas_ordenadas]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Se encontraron 0 filas en conflicto.</code></pre>
 </div>
 </div>
-<p>A continuación se muestra que no existen valores nulos:</p>
-<div id="12749574" class="cell" data-execution_count="4">
+<p>A continuación se muestra que no existen valores nulos, el número total de observaciones [102744], las variables utilizdas y su tipo:</p>
+<div id="61dcdee1" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>df_consolidado.info()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>df_consolidado.info()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>&lt;class 'pandas.DataFrame'&gt;
@@ -323,13 +329,13 @@ dtypes: datetime64[us](2), float64(1), int64(2), str(1)
 memory usage: 5.9 MB</code></pre>
 </div>
 </div>
-<p>Y, finalmente un resumen de los valores iniciales del dataset.</p>
-<div id="55049344" class="cell" data-execution_count="5">
+<p>Y, finalmente un resumen de los valores en un rango determinado del dataset.</p>
+<div id="8709d059" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>df_consolidado.head(<span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>df_consolidado.query(<span class="st">"FECHA &gt;= '2025-01-01' and FECHA &lt;= '2025-01-01' and UNIDAD == 'SARAPULLO U1'"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="11">
+<div class="cell-output cell-output-display" data-execution_count="6">
 <div>
 
 
@@ -347,94 +353,220 @@ memory usage: 5.9 MB</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">0</th>
-<td>2022-02-04 01:00:00</td>
-<td>2022-02-04</td>
-<td>2022</td>
+<th data-quarto-table-cell-role="th">3186</th>
+<td>2025-01-01 01:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
 <td>1</td>
 <td>SARAPULLO U1</td>
-<td>0.0</td>
+<td>12355.27895</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
-<td>2022-02-04 01:00:00</td>
-<td>2022-02-04</td>
-<td>2022</td>
-<td>1</td>
-<td>SARAPULLO U2</td>
-<td>0.0</td>
-</tr>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">2</th>
-<td>2022-02-04 01:00:00</td>
-<td>2022-02-04</td>
-<td>2022</td>
-<td>1</td>
-<td>SARAPULLO U3</td>
-<td>0.0</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">3</th>
-<td>2022-02-05 01:00:00</td>
-<td>2022-02-05</td>
-<td>2022</td>
-<td>1</td>
+<th data-quarto-table-cell-role="th">7467</th>
+<td>2025-01-01 02:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>2</td>
 <td>SARAPULLO U1</td>
-<td>0.0</td>
+<td>12360.38418</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">4</th>
-<td>2022-02-05 01:00:00</td>
-<td>2022-02-05</td>
-<td>2022</td>
-<td>1</td>
-<td>SARAPULLO U2</td>
-<td>0.0</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">5</th>
-<td>2022-02-05 01:00:00</td>
-<td>2022-02-05</td>
-<td>2022</td>
-<td>1</td>
-<td>SARAPULLO U3</td>
-<td>0.0</td>
-</tr>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">6</th>
-<td>2022-02-06 01:00:00</td>
-<td>2022-02-06</td>
-<td>2022</td>
-<td>1</td>
+<th data-quarto-table-cell-role="th">11748</th>
+<td>2025-01-01 03:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>3</td>
 <td>SARAPULLO U1</td>
-<td>0.0</td>
+<td>12661.67931</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">7</th>
-<td>2022-02-06 01:00:00</td>
-<td>2022-02-06</td>
-<td>2022</td>
-<td>1</td>
-<td>SARAPULLO U2</td>
-<td>0.0</td>
+<th data-quarto-table-cell-role="th">16029</th>
+<td>2025-01-01 04:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>4</td>
+<td>SARAPULLO U1</td>
+<td>12857.39435</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">8</th>
-<td>2022-02-06 01:00:00</td>
-<td>2022-02-06</td>
-<td>2022</td>
-<td>1</td>
-<td>SARAPULLO U3</td>
-<td>0.0</td>
+<th data-quarto-table-cell-role="th">20310</th>
+<td>2025-01-01 05:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>5</td>
+<td>SARAPULLO U1</td>
+<td>12860.82525</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">9</th>
-<td>2022-02-07 01:00:00</td>
-<td>2022-02-07</td>
-<td>2022</td>
-<td>1</td>
+<th data-quarto-table-cell-role="th">24591</th>
+<td>2025-01-01 06:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>6</td>
 <td>SARAPULLO U1</td>
-<td>0.0</td>
+<td>12089.56534</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">28872</th>
+<td>2025-01-01 07:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>7</td>
+<td>SARAPULLO U1</td>
+<td>12604.90516</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">33153</th>
+<td>2025-01-01 08:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>8</td>
+<td>SARAPULLO U1</td>
+<td>11889.73733</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">37434</th>
+<td>2025-01-01 09:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>9</td>
+<td>SARAPULLO U1</td>
+<td>11881.55678</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">41715</th>
+<td>2025-01-01 10:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>10</td>
+<td>SARAPULLO U1</td>
+<td>11884.80338</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">45996</th>
+<td>2025-01-01 11:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>11</td>
+<td>SARAPULLO U1</td>
+<td>12256.74050</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">50277</th>
+<td>2025-01-01 12:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>12</td>
+<td>SARAPULLO U1</td>
+<td>11488.68683</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">54558</th>
+<td>2025-01-01 13:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>13</td>
+<td>SARAPULLO U1</td>
+<td>11645.70600</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">58839</th>
+<td>2025-01-01 14:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>14</td>
+<td>SARAPULLO U1</td>
+<td>11392.57259</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">63120</th>
+<td>2025-01-01 15:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>15</td>
+<td>SARAPULLO U1</td>
+<td>11387.36912</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">67401</th>
+<td>2025-01-01 16:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>16</td>
+<td>SARAPULLO U1</td>
+<td>12585.22259</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">71682</th>
+<td>2025-01-01 17:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>17</td>
+<td>SARAPULLO U1</td>
+<td>13783.50258</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">75963</th>
+<td>2025-01-01 18:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>18</td>
+<td>SARAPULLO U1</td>
+<td>11917.35629</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">80244</th>
+<td>2025-01-01 19:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>19</td>
+<td>SARAPULLO U1</td>
+<td>12735.95228</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">84525</th>
+<td>2025-01-01 20:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>20</td>
+<td>SARAPULLO U1</td>
+<td>14174.37642</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">88806</th>
+<td>2025-01-01 21:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>21</td>
+<td>SARAPULLO U1</td>
+<td>14804.26636</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">93087</th>
+<td>2025-01-01 22:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>22</td>
+<td>SARAPULLO U1</td>
+<td>14799.38057</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">97368</th>
+<td>2025-01-01 23:00:00</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>23</td>
+<td>SARAPULLO U1</td>
+<td>14543.46821</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">101649</th>
+<td>2025-01-01 23:59:59</td>
+<td>2025-01-01</td>
+<td>2025</td>
+<td>24</td>
+<td>SARAPULLO U1</td>
+<td>14517.23661</td>
 </tr>
 </tbody>
 </table>
@@ -457,21 +589,21 @@ memory usage: 5.9 MB</code></pre>
 </section>
 <section id="exportar-datos-listos-para-visualización" class="level2">
 <h2 class="anchored" data-anchor-id="exportar-datos-listos-para-visualización">Exportar datos listos para visualización</h2>
-<div id="09a7919c" class="cell" data-execution_count="6">
+<div id="d12c21d7" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Definir el nombre del archivo</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>nombre_archivo <span class="op">=</span> <span class="st">"Energia_CMS_final.csv"</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Exportar a CSV</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>df_consolidado.to_csv(</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    nombre_archivo, </span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    index<span class="op">=</span><span class="va">False</span>,        <span class="co"># No guardar la columna de índices de Pandas</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    encoding<span class="op">=</span><span class="st">'utf-8-sig'</span>, <span class="co"># 'utf-8-sig' ayuda a que Excel reconozca caracteres especiales y tildes</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    sep<span class="op">=</span><span class="st">';'</span>             <span class="co"># Usamos punto y coma, que es el estándar regional en Ecuador para CSVs</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Archivo exportado con éxito: </span><span class="sc">{</span>nombre_archivo<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Definir el nombre del archivo</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>nombre_archivo <span class="op">=</span> <span class="st">"Energia_CMS_final.csv"</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Exportar a CSV</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>df_consolidado.to_csv(</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    nombre_archivo, </span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    index<span class="op">=</span><span class="va">False</span>,        <span class="co"># No guardar la columna de índices de Pandas</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    encoding<span class="op">=</span><span class="st">'utf-8-sig'</span>, <span class="co"># 'utf-8-sig' ayuda a que Excel reconozca caracteres especiales y tildes</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    sep<span class="op">=</span><span class="st">';'</span>             <span class="co"># Usamos punto y coma, que es el estándar regional en Ecuador para CSVs</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Archivo exportado con éxito: </span><span class="sc">{</span>nombre_archivo<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Archivo exportado con éxito: Energia_CMS_final.csv</code></pre>
