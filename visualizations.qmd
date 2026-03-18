@@ -45,7 +45,7 @@ Utilizamos un gráfico de áreas apiladas porque permite visualizar simultáneam
 selection = alt.selection_point(fields=['ANIO'])
 opacity_condition = alt.condition(selection, alt.value(1), alt.value(0.2))
 
-# CHART 1: Selector Anual
+# CHART 1: Selector Anual 
 chart1 = alt.Chart(Energy_CMS).transform_filter(
     alt.datum.GENERACION_MW > 0
 ).mark_bar().encode(
@@ -55,7 +55,7 @@ chart1 = alt.Chart(Energy_CMS).transform_filter(
     opacity=opacity_condition
 ).add_params(selection).properties(width=150, height=250, title="1. Seleccione Año")
 
-# CHART 2: Estacionalidad 
+#  CHART 2: Estacionalidad 
 chart2 = alt.Chart(Energy_CMS).transform_filter(
     alt.datum.GENERACION_MW > 0
 ).transform_filter(selection).mark_area(opacity=0.7, line=True).encode(
@@ -69,54 +69,89 @@ chart2 = alt.Chart(Energy_CMS).transform_filter(
     ]
 ).properties(width=450, height=250, title="2. Distribución Temporal (Sincronismo)")
 
-# CHART 3: Barras de Equilibrio con Porcentaje en Tooltip
+#  CHART 3: Barras de Equilibrio 
 bars = alt.Chart(Energy_CMS).transform_filter(
     alt.datum.GENERACION_MW > 0
-).transform_filter(
-    selection
-).transform_joinaggregate(
-    # Calculamos el total de horas por año para poder sacar el %
+).transform_filter(selection).transform_joinaggregate(
     TotalHorasAnio='count(GENERACION_MW)',
     groupby=['ANIO']
 ).transform_calculate(
-    # Calculamos el porcentaje individual (esta operación se hace fila a fila tras el joinaggregate)
     Porcentaje='1 / datum.TotalHorasAnio'
 ).mark_bar().encode(
-    x=alt.X('sum(Porcentaje):Q', # La suma de estas fracciones dará el % exacto
-            axis=alt.Axis(format='%'), 
-            title='Participación Relativa (%)'),
+    x=alt.X('sum(Porcentaje):Q', axis=alt.Axis(format='%'), title='Participación Relativa (%)'),
     y=alt.Y('ANIO:N', title='Año'),
-    color=alt.Color('UNIDAD:N', legend=alt.Legend(orient="bottom")),
+    color=alt.Color('UNIDAD:N', legend=alt.Legend(orient="bottom", title="Unidad")),
     tooltip=[
         alt.Tooltip('ANIO:N', title='Año'),
         alt.Tooltip('UNIDAD:N', title='Unidad'), 
         alt.Tooltip('count(GENERACION_MW):Q', title='Horas Totales'),
-        alt.Tooltip('sum(Porcentaje):Q', title='Participación', format='.2%') # Muestra el % en el tooltip
+        alt.Tooltip('sum(Porcentaje):Q', title='Participación', format='.2%')
     ]
 )
 
-# Líneas de referencia (Simetría)
 target_line = alt.Chart(pd.DataFrame({'x': [0.3333, 0.6666]})).mark_rule(
-    color='green', 
-    strokeDash=[5, 5], 
-    size=2
+    color='green', strokeDash=[5, 5], size=2
 ).encode(x='x:Q')
 
 chart3_final = (bars + target_line).properties(
-    width=650, 
-    height=150, 
-    title="3. Verificación de Equilibrio en Horas de Sincronismo"
+    width=650, height=150, title="3. Verificación de Equilibrio en Horas de Sincronismo"
 )
 
-# Render Final
-dashboard = ((chart1 | chart2) & chart3_final).configure_axis(
+#  CHART 4: Sincronismo acumulado
+#  
+base_acum = alt.Chart(Energy_CMS).transform_filter(
+    alt.datum.GENERACION_MW > 0
+).transform_window(
+    Cumulative_Hours='count(GENERACION_MW)',
+    frame=[None, 0],
+    groupby=['UNIDAD'],
+    sort=[{'field': 'FECHA_HORA'}]
+)
+
+lines_hist = base_acum.mark_line(size=3).encode(
+    x=alt.X('FECHA_HORA:T', title='Línea de Tiempo Total'),
+    y=alt.Y('Cumulative_Hours:Q', title='Horas Acumuladas'),
+    color=alt.Color('UNIDAD:N', scale=alt.Scale(scheme='tableau10'), legend=None)
+)
+
+# Función para generar etiquetas físicas con carril propio (dy)
+def crear_etiqueta_fisica(unidad, dy_offset):
+    return base_acum.transform_window(
+        rank='rank()',
+        sort=[{'field': 'FECHA_HORA', 'order': 'descending'}],
+        groupby=['UNIDAD']
+    ).transform_filter(
+        (alt.datum.rank == 1) & (alt.datum.UNIDAD == unidad)
+    ).mark_text(
+        align='left', dx=15, dy=dy_offset, fontWeight='bold', fontSize=12
+    ).encode(
+        x='FECHA_HORA:T',
+        y='Cumulative_Hours:Q',
+        text=alt.Text('Cumulative_Hours:Q', format=','),
+        color=alt.Color('UNIDAD:N', legend=None)
+    )
+
+# Generación de capas de etiquetas con deltas diferenciados
+labels_u1 = crear_etiqueta_fisica('SARAPULLO U1', -30)
+labels_u2 = crear_etiqueta_fisica('SARAPULLO U2', 0)
+labels_u3 = crear_etiqueta_fisica('SARAPULLO U3', 30)
+
+chart4_final = (lines_hist + labels_u1 + labels_u2 + labels_u3).properties(
+    width=650, height=300, title="4. Sincronismo acumulado"
+)
+
+# --- ENSAMBLAJE FINAL DEL DASHBOARD ---
+dashboard = ((chart1 | chart2) & chart3_final & chart4_final).configure_axis(
     grid=True
 ).configure_view(
     strokeWidth=0
+).configure(
+    #padding={"right": 100}
 )
 
 dashboard.display()
 ```
+
 ## Análisis del gráfico
 Gráfico 1. Actúa como filtro para escoger el año de visualización, también brinda información de la magnitud total de horas del año (Productividad).
 
